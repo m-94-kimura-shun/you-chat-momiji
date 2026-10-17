@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Live Chat Simulator</title>
+  <style>
+    /* ライトモード（白背景・デフォルト） */
+    :root {
+      --bg-page: #f9f9f9;
+      --panel-bg: #ffffff;
+      --header-bg: #ffffff;
+      --ticker-bg: #f2f2f2;
+      --border-color: #e5e5e5;
+      --text-main: #0f0f0f;
+      --text-sub: #606060;
+      --input-bg: #f2f2f2;
+      --yt-blue: #065fd4;
+      --modal-bg: #ffffff;
+      --hover-bg: rgba(0, 0, 0, 0.05);
+    }
+
+    /* ダークモード用変数 */
+    body.dark-mode {
+      --bg-page: #0f0f0f;
+      --panel-bg: #181818;
+      --header-bg: #202020;
+      --ticker-bg: #212121;
+      --border-color: #272727;
+      --text-main: #f1f1f1;
+      --text-sub: #aaaaaa;
+      --input-bg: #121212;
+      --modal-bg: #212121;
+      --hover-bg: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 12px;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* メインチャットコンテナ */
+    .chat-container {
+      width: 100%;
+      max-width: 420px;
+      height: 750px;
+      max-height: 94vh;
+      background-color: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+
+    /* ヘッダー */
+    .chat-header {
+      padding: 12px 16px;
+      background-color: var(--header-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .theme-toggle-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #cc0000;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #cc0000;
+      border-radius: 50%;
+    }
+
+    /* スパチャ上部ピン留め（ティッカー）領域 */
+    .ticker-area {
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      background-color: var(--ticker-bg);
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+      min-height: 46px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .ticker-empty {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* チャットスクロールエリア */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 通常コメント */
+    .chat-item {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      word-break: break-word;
+      align-items: flex-start;
+      flex-shrink: 0;
+    }
+    .avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 11px;
+      color: #fff;
+    }
+    .content-area {
+      display: inline;
+    }
+    .author-name {
+      color: var(--text-sub);
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    .message-text {
+      color: var(--text-main);
+    }
+
+    /* Super Chat カード */
+    .superchat-card {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      margin: 4px 0;
+      flex-shrink: 0;
+      width: 100%;
+      animation: popIn 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+    .superchat-header {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .superchat-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .superchat-amount {
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .superchat-body {
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      word-break: break-word;
+      font-weight: 500;
+    }
+
+    /* 遡り時の「最新へ移動」ボタン */
+    .scroll-bottom-btn {
+      position: absolute;
+      bottom: 115px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--yt-blue);
+      border: none;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    /* 入力フッター全体 */
+    .chat-footer {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background-color: var(--header-bg);
+      flex-shrink: 0;
+    }
+
+    /* ニックネーム＆アイコン色設定バー */
+    .user-profile-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .nickname-input {
+      flex: 1;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      font-weight: 600;
+    }
+    .nickname-input:focus {
+      border-color: var(--yt-blue);
+    }
+    .color-dots {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+    .color-dot.active {
+      border-color: var(--text-main);
+      transform: scale(1.15);
+    }
+
+    /* メッセージ入力行 */
+    .message-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .input-box {
+      flex: 1;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      outline: none;
+    }
+    .input-box:focus { border-color: var(--yt-blue); }
+
+    .btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      color: var(--text-main);
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .btn:hover { background-color: var(--hover-bg); }
+    .btn-superchat {
+      background-color: #e8f5e9;
+      color: #00a152;
+      font-weight: 800;
+      font-size: 15px;
+      border: 1px solid #c8e6c9;
+    }
+
+    /* Super Chat 作成モーダル */
+    .modal-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal-card {
+      background-color: var(--modal-bg);
+      color: var(--text-main);
+      width: 100%;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+    .modal-title { font-size: 15px; font-weight: bold; }
+    .slider-container { display: flex; flex-direction: column; gap: 6px; }
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(6px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="chat-container">
+  <!-- チャットヘッダー -->
+  <div class="chat-header">
+    <span>トップチャット</span>
+    <div class="header-right">
+      <button class="theme-toggle-btn" id="themeToggleBtn">🌙 ダーク背景にする</button>
+      <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+    </div>
+  </div>
+
+  <!-- 上部ティッカー領域（ピン留め） -->
+  <div class="ticker-area" id="tickerArea">
+    <span class="ticker-empty" id="tickerEmptyText">Super Chat がここにピン留めされます</span>
+  </div>
+
+  <!-- メインメッセージ領域 -->
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <!-- スクロール復帰ボタン -->
+  <button class="scroll-bottom-btn" id="scrollBottomBtn">↓ 新着チャットへ移動</button>
+
+  <!-- 入力フッター -->
+  <div class="chat-footer">
+    <!-- 自分のニックネーム＆アイコンカラー設定 -->
+    <div class="user-profile-bar">
+      <div class="avatar" id="currentUserAvatarPreview" style="background:#065fd4; width:22px; height:22px; font-size:10px;">名</div>
+      <span>名前:</span>
+      <input type="text" class="nickname-input" id="nicknameInput" value="名無しの視聴者" placeholder="ニックネームを入力..." maxlength="20">
+      <div class="color-dots" id="colorDotsContainer" title="アイコンの色を変更"></div>
+    </div>
+
+    <!-- チャット入力＆スパチャボタン -->
+    <div class="message-input-row">
+      <button class="btn btn-superchat" id="openSuperChatBtn" title="Super Chatを送信">¥</button>
+      <input type="text" class="input-box" id="messageInput" placeholder="チャット..." maxlength="200">
+      <button class="btn" id="sendBtn" title="送信">➤</button>
+    </div>
+  </div>
+
+  <!-- Super Chat 投稿モーダル -->
+  <div class="modal-overlay" id="superChatModal">
+    <div class="modal-card">
+      <div class="modal-title">Super Chat を送信</div>
+
+      <!-- リアルタイムプレビュー -->
+      <div class="superchat-card" id="scPreviewCard">
+        <div class="superchat-header" id="scPreviewHeader">
+          <div class="superchat-user">
+            <div class="avatar" id="scPreviewAvatar" style="background:#065fd4;">名</div>
+            <span id="scPreviewUserName">名無しの視聴者</span>
+          </div>
+          <div class="superchat-amount" id="scPreviewAmount">¥1,000</div>
+        </div>
+        <div class="superchat-body" id="scPreviewBody">
+          ナイス配信！応援しています！
+        </div>
+      </div>
+
+      <!-- 金額スライダー -->
+      <div class="slider-container">
+        <div class="slider-labels">
+          <span>¥100</span>
+          <span>¥500</span>
+          <span>¥1,000</span>
+          <span>¥5,000</span>
+          <span>¥10,000</span>
+        </div>
+        <input type="range" id="amountSlider" min="0" max="6" step="1" value="3" style="width: 100%; cursor: pointer;">
+      </div>
+
+      <!-- コメント入力 -->
+      <textarea id="scCommentInput" class="input-box" style="border-radius: 8px; resize: none; height: 68px;" placeholder="メッセージを入力..."></textarea>
+      <div style="font-size: 11px; color: var(--text-sub); text-align: right;" id="scCharCount">0 / 200</div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="btn" id="closeModalBtn" style="border-radius: 8px; width: auto; padding: 6px 12px; font-size: 13px;">キャンセル</button>
+        <button class="btn" id="submitSuperChatBtn" style="border-radius: 8px; width: auto; padding: 8px 18px; font-size: 13px; background: var(--yt-blue); color: #fff; font-weight: bold;">購入して送信</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Super Chat ティア設定
+  const TIERS = [
+    { tier: 1, amount: 100,   headerColor: '#1565C0', bodyColor: '#1E88E5', textColor: '#ffffff', maxChars: 0,   duration: 0 },
+    { tier: 2, amount: 200,   headerColor: '#00B8D4', bodyColor: '#00E5FF', textColor: '#000000', maxChars: 50,  duration: 0 },
+    { tier: 3, amount: 500,   headerColor: '#00BFA5', bodyColor: '#1DE9B6', textColor: '#000000', maxChars: 150, duration: 20 },
+    { tier: 4, amount: 1000,  headerColor: '#FFB300', bodyColor: '#FFCA28', textColor: '#000000', maxChars: 200, duration: 35 },
+    { tier: 5, amount: 2000,  headerColor: '#E65100', bodyColor: '#F57C00', textColor: '#ffffff', maxChars: 225, duration: 50 },
+    { tier: 6, amount: 5000,  headerColor: '#C2185B', bodyColor: '#E91E63', textColor: '#ffffff', maxChars: 250, duration: 70 },
+    { tier: 7, amount: 10000, headerColor: '#D00000', bodyColor: '#E62117', textColor: '#ffffff', maxChars: 270, duration: 100 }
+  ];
+
+  // 選べるアイコン色リスト
+  const USER_COLORS = ['#065fd4', '#E91E63', '#009688', '#FF9800', '#9C27B0', '#43A047'];
+
+  // モック視聴者データ
+  const MOCK_USERS = [
+    { name: 'たなか', color: '#E91E63' },
+    { name: 'Sato_K', color: '#9C27B0' },
+    { name: 'ネコ丸', color: '#3F51B5' },
+    { name: 'StreamFan', color: '#009688' },
+    { name: 'アリス', color: '#FF9800' },
+    { name: '夜更かしフクロウ', color: '#795548' }
+  ];
+
+  const MOCK_MESSAGES = [
+    'こんばんはー！', '待ってました！', '草', '音量バッチリです',
+    '88888888', 'さすがすぎるｗｗ', 'それ分かる', '神回確定',
+    '画質めっちゃ綺麗', 'お疲れ様です！', 'えええええええええ'
+  ];
+
+  const chatMessages = document.getElementById('chatMessages');
+  const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const tickerArea = document.getElementById('tickerArea');
+  const tickerEmptyText = document.getElementById('tickerEmptyText');
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+  // ユーザープロフィール関連
+  const nicknameInput = document.getElementById('nicknameInput');
+  const currentUserAvatarPreview = document.getElementById('currentUserAvatarPreview');
+  const colorDotsContainer = document.getElementById('colorDotsContainer');
+
+  // モーダル要素
+  const openSuperChatBtn = document.getElementById('openSuperChatBtn');
+  const superChatModal = document.getElementById('superChatModal');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const amountSlider = document.getElementById('amountSlider');
+  const scPreviewHeader = document.getElementById('scPreviewHeader');
+  const scPreviewAvatar = document.getElementById('scPreviewAvatar');
+  const scPreviewUserName = document.getElementById('scPreviewUserName');
+  const scPreviewAmount = document.getElementById('scPreviewAmount');
+  const scPreviewBody = document.getElementById('scPreviewBody');
+  const scCommentInput = document.getElementById('scCommentInput');
+  const scCharCount = document.getElementById('scCharCount');
+  const submitSuperChatBtn = document.getElementById('submitSuperChatBtn');
+
+  let isAutoScroll = true;
+  let userAvatarColor = localStorage.getItem('yt_sim_color') || USER_COLORS[0];
+
+  // 保存されていたニックネームを復元
+  const savedName = localStorage.getItem('yt_sim_nickname');
+  if (savedName) {
+    nicknameInput.value = savedName;
+  }
+
+  // カラーパレット生成
+  USER_COLORS.forEach(color => {
+    const dot = document.createElement('div');
+    dot.className = 'color-dot' + (color === userAvatarColor ? ' active' : '');
+    dot.style.backgroundColor = color;
+    dot.addEventListener('click', () => {
+      userAvatarColor = color;
+      localStorage.setItem('yt_sim_color', color);
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      updateProfilePreview();
+    });
+    colorDotsContainer.appendChild(dot);
+  });
+
+  // 現在のニックネーム取得ヘルパー
+  function getCurrentUserName() {
+    const raw = nicknameInput.value.trim();
+    return raw || '名無しの視聴者';
+  }
+
+  // プロフィール表示の更新
+  function updateProfilePreview() {
+    const name = getCurrentUserName();
+    localStorage.setItem('yt_sim_nickname', name);
+    const initial = name.slice(0, 1);
+
+    currentUserAvatarPreview.style.backgroundColor = userAvatarColor;
+    currentUserAvatarPreview.innerText = initial;
+
+    scPreviewAvatar.style.backgroundColor = userAvatarColor;
+    scPreviewAvatar.innerText = initial;
+    scPreviewUserName.innerText = name;
+  }
+
+  nicknameInput.addEventListener('input', updateProfilePreview);
+  updateProfilePreview();
+
+  // 背景テーマ切り替え
+  themeToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    themeToggleBtn.innerText = isDark ? '☀️ 白背景にする' : '🌙 ダーク背景にする';
+  });
+
+  // 自動スクロール判定
+  chatMessages.addEventListener('scroll', () => {
+    const threshold = 40;
+    const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight <= threshold;
+    isAutoScroll = isAtBottom;
+    scrollBottomBtn.style.display = isAtBottom ? 'none' : 'block';
+  });
+
+  scrollBottomBtn.addEventListener('click', scrollToBottom);
+
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    isAutoScroll = true;
+    scrollBottomBtn.style.display = 'none';
+  }
+
+  // 通常コメント描画
+  function appendNormalMessage(name, text, color, forceScroll = false) {
+    const item = document.createElement('div');
+    item.className = 'chat-item';
+    item.innerHTML = `
+      <div class="avatar" style="background:${color};">${escapeHtml(name.slice(0, 1))}</div>
+      <div class="content-area">
+        <span class="author-name">${escapeHtml(name)}</span>
+        <span class="message-text">${escapeHtml(text)}</span>
+      </div>
+    `;
+    chatMessages.appendChild(item);
+    trimOldMessages();
+    if (isAutoScroll || forceScroll) scrollToBottom();
+  }
+
+  // Super Chat 描画
+  function appendSuperChat(name, amount, message, tierConfig, avatarColor = '#065fd4', forceScroll = false) {
+    const card = document.createElement('div');
+    card.className = 'superchat-card';
+    card.style.color = tierConfig.textColor;
+
+    let bodyHtml = '';
+    if (tierConfig.tier > 1 && message) {
+      bodyHtml = `
+        <div class="superchat-body" style="background:${tierConfig.bodyColor}; color:${tierConfig.textColor};">
+          ${escapeHtml(message)}
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="superchat-header" style="background:${tierConfig.headerColor}; color:${tierConfig.textColor};">
+        <div class="superchat-user">
+          <div class="avatar" style="background:${avatarColor}; color:#fff;">${escapeHtml(name.slice(0, 1))}</div>
+          <span>${escapeHtml(name)}</span>
+        </div>
+        <div class="superchat-amount">¥${amount.toLocaleString()}</div>
+      </div>
+      ${bodyHtml}
+    `;
+
+    chatMessages.appendChild(card);
+    trimOldMessages();
+    if (isAutoScroll || forceScroll) scrollToBottom();
+
+    if (tierConfig.duration > 0) {
+      addTicker(name, amount, message, tierConfig);
+    }
+  }
+
+  function trimOldMessages() {
+    while (chatMessages.children.length > 150) {
+      chatMessages.removeChild(chatMessages.firstChild);
+    }
+  }
+
+  // ティッカー登録
+  function addTicker(name, amount, message, tierConfig) {
+    if (tickerEmptyText) tickerEmptyText.style.display = 'none';
+
+    const item = document.createElement('div');
+    item.className = 'ticker-item';
+    item.style.backgroundColor = tierConfig.headerColor;
+    item.style.color = tierConfig.textColor;
+    item.title = message ? `${name}: ${message}` : name;
+    item.innerHTML = `
+      <span>${escapeHtml(name)}</span>
+      <span>¥${amount.toLocaleString()}</span>
+    `;
+
+    item.addEventListener('click', () => {
+      alert(`【Super Chat】\n投稿者: ${name}\n金額: ¥${amount.toLocaleString()}\nコメント: ${message || '(メッセージなし)'}`);
+    });
+
+    tickerArea.appendChild(item);
+
+    setTimeout(() => {
+      item.remove();
+      if (tickerArea.querySelectorAll('.ticker-item').length === 0 && tickerEmptyText) {
+        tickerEmptyText.style.display = 'inline';
+      }
+    }, tierConfig.duration * 1000);
+  }
+
+  // 自分の通常コメント送信
+  function handleSendMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+    const myName = getCurrentUserName();
+    appendNormalMessage(myName, text, userAvatarColor, true);
+    messageInput.value = '';
+  }
+
+  sendBtn.addEventListener('click', handleSendMessage);
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleSendMessage();
+  });
+
+  // モーダル操作 & スライダー連動
+  openSuperChatBtn.addEventListener('click', () => {
+    updateProfilePreview();
+    superChatModal.style.display = 'flex';
+    updateModalPreview();
+    scCommentInput.focus();
+  });
+
+  closeModalBtn.addEventListener('click', () => {
+    superChatModal.style.display = 'none';
+  });
+
+  amountSlider.addEventListener('input', updateModalPreview);
+  scCommentInput.addEventListener('input', updateModalPreview);
+
+  function updateModalPreview() {
+    const currentTier = TIERS[parseInt(amountSlider.value)];
+    scPreviewHeader.style.backgroundColor = currentTier.headerColor;
+    scPreviewHeader.style.color = currentTier.textColor;
+    scPreviewBody.style.backgroundColor = currentTier.bodyColor;
+    scPreviewBody.style.color = currentTier.textColor;
+    scPreviewAmount.innerText = `¥${currentTier.amount.toLocaleString()}`;
+
+    if (currentTier.tier === 1) {
+      scCommentInput.disabled = true;
+      scCommentInput.placeholder = '¥100ではメッセージを送信できません';
+      scCommentInput.value = '';
+      scPreviewBody.style.display = 'none';
+      scCharCount.innerText = '0 / 0';
+    } else {
+      scCommentInput.disabled = false;
+      scCommentInput.placeholder = 'メッセージを入力...';
+      scCommentInput.maxLength = currentTier.maxChars;
+      scPreviewBody.style.display = 'block';
+
+      const text = scCommentInput.value.trim();
+      scPreviewBody.innerText = text || '(メッセージを入力してください)';
+      scCharCount.innerText = `${scCommentInput.value.length} / ${currentTier.maxChars}`;
+    }
+  }
+
+  // 自分のスパチャ送信実行
+  submitSuperChatBtn.addEventListener('click', () => {
+    const currentTier = TIERS[parseInt(amountSlider.value)];
+    const message = scCommentInput.value.trim();
+    const myName = getCurrentUserName();
+
+    appendSuperChat(myName, currentTier.amount, message, currentTier, userAvatarColor, true);
+
+    scCommentInput.value = '';
+    superChatModal.style.display = 'none';
+  });
+
+  // 自動モックコメント生成ループ
+  function scheduleNextMockComment() {
+    const delay = Math.random() * 1400 + 900;
+    setTimeout(() => {
+      if (Math.random() < 0.08) {
+        const randomUser = MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)];
+        const randomTier = TIERS[Math.floor(Math.random() * TIERS.length)];
+        const scMsg = randomTier.tier > 1 ? '神配信ありがとうございます！！応援してます！' : '';
+        appendSuperChat(randomUser.name, randomTier.amount, scMsg, randomTier, randomUser.color, false);
+      } else {
+        const randomUser = MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)];
+        const randomMsg = MOCK_MESSAGES[Math.floor(Math.random() * MOCK_MESSAGES.length)];
+        appendNormalMessage(randomUser.name, randomMsg, randomUser.color, false);
+      }
+      scheduleNextMockComment();
+    }, delay);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>'"]/g, tag => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag] || tag));
+  }
+
+  // 初期実行
+  scheduleNextMockComment();
+</script>
+</body>
+</html>
