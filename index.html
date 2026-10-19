@@ -18,6 +18,7 @@
       --yt-blue: #065fd4;
       --modal-bg: #ffffff;
       --hover-bg: rgba(0, 0, 0, 0.05);
+      --ctrl-bg: #f8f9fa;
     }
 
     /* ダークモード用変数 */
@@ -32,6 +33,7 @@
       --input-bg: #121212;
       --modal-bg: #212121;
       --hover-bg: rgba(255, 255, 255, 0.1);
+      --ctrl-bg: #252525;
     }
 
     * {
@@ -56,7 +58,7 @@
     .chat-container {
       width: 100%;
       max-width: 420px;
-      height: 750px;
+      height: 760px;
       max-height: 94vh;
       background-color: var(--panel-bg);
       border: 1px solid var(--border-color);
@@ -70,7 +72,7 @@
 
     /* ヘッダー */
     .chat-header {
-      padding: 12px 16px;
+      padding: 10px 14px;
       background-color: var(--header-bg);
       border-bottom: 1px solid var(--border-color);
       display: flex;
@@ -81,36 +83,98 @@
       flex-shrink: 0;
     }
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .header-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px;
     }
 
-    .theme-toggle-btn {
+    .header-btn {
       background: var(--input-bg);
       border: 1px solid var(--border-color);
       color: var(--text-main);
-      padding: 4px 10px;
-      border-radius: 14px;
+      padding: 4px 8px;
+      border-radius: 12px;
       font-size: 11px;
       cursor: pointer;
       font-weight: 500;
+    }
+    .header-btn:hover {
+      opacity: 0.85;
     }
 
     .live-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       color: #cc0000;
       font-size: 12px;
       font-weight: 700;
+      margin-left: 4px;
     }
     .live-dot {
       width: 8px;
       height: 8px;
       background-color: #cc0000;
       border-radius: 50%;
+    }
+    .timer-text {
+      font-size: 11px;
+      color: var(--text-sub);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    /* 演出コントロールパネル（開閉式） */
+    .director-panel {
+      background-color: var(--ctrl-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 14px;
+      font-size: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .director-panel.open {
+      display: flex;
+    }
+    .director-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .ctrl-btn {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .ctrl-btn.active {
+      background: var(--yt-blue);
+      color: #fff;
+      border-color: var(--yt-blue);
+    }
+    .ctrl-select {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+      flex: 1;
     }
 
     /* スパチャ上部ピン留め（ティッカー）領域 */
@@ -273,9 +337,7 @@
       outline: none;
       font-weight: 600;
     }
-    .nickname-input:focus {
-      border-color: var(--yt-blue);
-    }
+    .nickname-input:focus { border-color: var(--yt-blue); }
     .color-dots {
       display: flex;
       gap: 4px;
@@ -379,10 +441,40 @@
 <div class="chat-container">
   <!-- チャットヘッダー -->
   <div class="chat-header">
-    <span>トップチャット</span>
-    <div class="header-right">
-      <button class="theme-toggle-btn" id="themeToggleBtn">🌙 ダーク背景にする</button>
+    <div class="header-left">
+      <span>トップチャット</span>
       <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+      <span class="timer-text" id="elapsedTimer">00:00</span>
+    </div>
+    <div class="header-right">
+      <button class="header-btn" id="directorToggleBtn">⚙️ 演出操作</button>
+      <button class="header-btn" id="themeToggleBtn">🌙 暗</button>
+    </div>
+  </div>
+
+  <!-- 演出コントロールパネル（⚙️ボタンで開閉） -->
+  <div class="director-panel" id="directorPanel">
+    <div class="director-row">
+      <span>進行: <strong id="currentPhaseLabel">自動（タイマー連動）</strong></span>
+      <div>
+        <button class="ctrl-btn" id="pauseResumeBtn">⏸ 一時停止</button>
+        <button class="ctrl-btn" id="resetTimerBtn">🔄 0秒に戻す</button>
+      </div>
+    </div>
+    <div class="director-row">
+      <span>フェーズ切替:</span>
+      <select class="ctrl-select" id="phaseSelect">
+        <option value="auto">⏱ 時間経過で自動切り替え</option>
+      </select>
+    </div>
+    <div class="director-row">
+      <span>速度倍率:</span>
+      <div style="display:flex; gap:4px;">
+        <button class="ctrl-btn" data-speed="0.5">0.5x (遅)</button>
+        <button class="ctrl-btn active" data-speed="1">1.0x (標準)</button>
+        <button class="ctrl-btn" data-speed="2">2.0x (速)</button>
+        <button class="ctrl-btn" data-speed="5">5.0x (弾幕)</button>
+      </div>
     </div>
   </div>
 
@@ -459,6 +551,75 @@
 </div>
 
 <script>
+  // =========================================================================
+  // ★ 1. タイムライン（シナリオ）設定：ここを書き換えることで自由に演出できます！
+  // =========================================================================
+  const SCENARIO_PHASES = [
+    {
+      name: "① 0分〜：開始・待機（ゆったり）",
+      startTime: 0,           // 開始0秒〜
+      minDelay: 1200,         // コメント間隔の最小値（ミリ秒：1000 = 1秒）
+      maxDelay: 2500,         // コメント間隔の最大値
+      superchatRate: 0.05,    // スパチャが混ざる確率（0.05 = 5%）
+      messages: [
+        "こんばんはー！", "待ってました！", "待機！", "音量バッチリです",
+        "はじまった！", "今日も楽しみにしてました", "わくわく", "初見です！",
+        "画質めっちゃ綺麗", "お疲れ様です！"
+      ],
+      scMessages: [
+        "配信待ってました！応援してます！", "今日も楽しみ！！", "お茶代どうぞ！"
+      ]
+    },
+    {
+      name: "② 1分後〜：展開・リアクション変化（中速）",
+      startTime: 60,          // 60秒後（1分後）〜
+      minDelay: 600,          // 0.6秒〜1.4秒間隔にスピードアップ
+      maxDelay: 1400,
+      superchatRate: 0.08,    // スパチャ確率 8%
+      messages: [
+        "えっ！？", "なんか雰囲気が変わった…", "おいおいマジか", "鳥肌立った",
+        "どういうこと！？", "それ伏線だったのか！", "やばいやばい", "見入ってしまう…",
+        "まさかの展開", "すごい迫力だ…"
+      ],
+      scMessages: [
+        "展開が熱すぎる！！", "鳥肌止まらないです！", "引き込まれる…！"
+      ]
+    },
+    {
+      name: "③ 3分後〜：クライマックス・大加速（超高速・弾幕）",
+      startTime: 180,         // 180秒後（3分後）〜
+      minDelay: 150,          // 0.15秒〜0.45秒間隔で猛スピードで流れる
+      maxDelay: 450,
+      superchatRate: 0.18,    // スパチャ確率 18%（スパチャ祭り状態）
+      messages: [
+        "888888888888", "うおおおおおおお！！", "神回確定！！", "最高すぎる！！！",
+        "きたああああああ！！", "泣いた😭😭😭", "伝説の瞬間", "ブラボー！！！",
+        "鳥肌やばい！！！", "888888888", "天才かよ！！！", "すごすぎるｗｗｗ"
+      ],
+      scMessages: [
+        "神配信ありがとうございました！！！", "感動をありがとう！！最高です！！", "伝説の回に立ち会えた！！"
+      ]
+    }
+  ];
+
+  // =========================================================================
+  // ★ 2. モック視聴者リスト（名前とアイコン色）
+  // =========================================================================
+  const MOCK_USERS = [
+    { name: 'たなか', color: '#E91E63' },
+    { name: 'Sato_K', color: '#9C27B0' },
+    { name: 'ネコ丸', color: '#3F51B5' },
+    { name: 'StreamFan', color: '#009688' },
+    { name: 'アリス', color: '#FF9800' },
+    { name: '夜更かしフクロウ', color: '#795548' },
+    { name: 'もみじ', color: '#D32F2F' },
+    { name: 'けんた', color: '#1976D2' },
+    { name: 'Haru_09', color: '#388E3C' },
+    { name: 'おもち', color: '#FBC02D' },
+    { name: 'シネマ好き', color: '#512DA8' },
+    { name: '匿名リスナー', color: '#455A64' }
+  ];
+
   // Super Chat ティア設定
   const TIERS = [
     { tier: 1, amount: 100,   headerColor: '#1565C0', bodyColor: '#1E88E5', textColor: '#ffffff', maxChars: 0,   duration: 0 },
@@ -470,25 +631,9 @@
     { tier: 7, amount: 10000, headerColor: '#D00000', bodyColor: '#E62117', textColor: '#ffffff', maxChars: 270, duration: 100 }
   ];
 
-  // 選べるアイコン色リスト
   const USER_COLORS = ['#065fd4', '#E91E63', '#009688', '#FF9800', '#9C27B0', '#43A047'];
 
-  // モック視聴者データ
-  const MOCK_USERS = [
-    { name: 'たなか', color: '#E91E63' },
-    { name: 'Sato_K', color: '#9C27B0' },
-    { name: 'ネコ丸', color: '#3F51B5' },
-    { name: 'StreamFan', color: '#009688' },
-    { name: 'アリス', color: '#FF9800' },
-    { name: '夜更かしフクロウ', color: '#795548' }
-  ];
-
-  const MOCK_MESSAGES = [
-    'こんばんはー！', '待ってました！', '草', '音量バッチリです',
-    '88888888', 'さすがすぎるｗｗ', 'それ分かる', '神回確定',
-    '画質めっちゃ綺麗', 'お疲れ様です！', 'えええええええええ'
-  ];
-
+  // DOM要素取得
   const chatMessages = document.getElementById('chatMessages');
   const scrollBottomBtn = document.getElementById('scrollBottomBtn');
   const messageInput = document.getElementById('messageInput');
@@ -497,7 +642,17 @@
   const tickerEmptyText = document.getElementById('tickerEmptyText');
   const themeToggleBtn = document.getElementById('themeToggleBtn');
 
-  // ユーザープロフィール関連
+  // 演出コントロール関連
+  const directorToggleBtn = document.getElementById('directorToggleBtn');
+  const directorPanel = document.getElementById('directorPanel');
+  const elapsedTimer = document.getElementById('elapsedTimer');
+  const currentPhaseLabel = document.getElementById('currentPhaseLabel');
+  const pauseResumeBtn = document.getElementById('pauseResumeBtn');
+  const resetTimerBtn = document.getElementById('resetTimerBtn');
+  const phaseSelect = document.getElementById('phaseSelect');
+  const speedBtns = document.querySelectorAll('[data-speed]');
+
+  // プロフィール関連
   const nicknameInput = document.getElementById('nicknameInput');
   const currentUserAvatarPreview = document.getElementById('currentUserAvatarPreview');
   const colorDotsContainer = document.getElementById('colorDotsContainer');
@@ -516,14 +671,96 @@
   const scCharCount = document.getElementById('scCharCount');
   const submitSuperChatBtn = document.getElementById('submitSuperChatBtn');
 
+  // 状態管理変数
   let isAutoScroll = true;
+  let elapsedSeconds = 0;
+  let isPaused = false;
+  let manualPhaseIndex = 'auto'; // 'auto' または 配列インデックス番号
+  let speedMultiplier = 1.0;     // 速度倍率
+  let mockLoopTimeout = null;
   let userAvatarColor = localStorage.getItem('yt_sim_color') || USER_COLORS[0];
+
+  // フェーズ選択肢をセレクトボックスに追加
+  SCENARIO_PHASES.forEach((phase, index) => {
+    const opt = document.createElement('option');
+    opt.value = index;
+    opt.innerText = `手動固定: ${phase.name}`;
+    phaseSelect.appendChild(opt);
+  });
+
+  // 1秒ごとの経過時間タイマー
+  setInterval(() => {
+    if (!isPaused) {
+      elapsedSeconds++;
+      updateTimerDisplay();
+    }
+  }, 1000);
+
+  function updateTimerDisplay() {
+    const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+    const secs = String(elapsedSeconds % 60).padStart(2, '0');
+    elapsedTimer.innerText = `${mins}:${secs}`;
+    const activePhase = getCurrentPhase();
+    currentPhaseLabel.innerText = activePhase.name;
+  }
+
+  // 現在適用すべきフェーズを取得
+  function getCurrentPhase() {
+    if (manualPhaseIndex !== 'auto') {
+      return SCENARIO_PHASES[parseInt(manualPhaseIndex)];
+    }
+    // 経過時間（elapsedSeconds）を超えている最後のフェーズを採用
+    let current = SCENARIO_PHASES[0];
+    for (const phase of SCENARIO_PHASES) {
+      if (elapsedSeconds >= phase.startTime) {
+        current = phase;
+      }
+    }
+    return current;
+  }
+
+  // 演出パネルのイベント設定
+  directorToggleBtn.addEventListener('click', () => {
+    directorPanel.classList.toggle('open');
+  });
+
+  pauseResumeBtn.addEventListener('click', () => {
+    isPaused = !isPaused;
+    pauseResumeBtn.innerText = isPaused ? '▶️ 再開' : '⏸ 一時停止';
+    pauseResumeBtn.classList.toggle('active', isPaused);
+    if (!isPaused) {
+      scheduleNextMockComment();
+    } else if (mockLoopTimeout) {
+      clearTimeout(mockLoopTimeout);
+    }
+  });
+
+  resetTimerBtn.addEventListener('click', () => {
+    elapsedSeconds = 0;
+    updateTimerDisplay();
+  });
+
+  phaseSelect.addEventListener('change', (e) => {
+    manualPhaseIndex = e.target.value;
+    updateTimerDisplay();
+    // 切り替えたら即座に次のコメント予約を再スケジュール
+    if (mockLoopTimeout) clearTimeout(mockLoopTimeout);
+    if (!isPaused) scheduleNextMockComment();
+  });
+
+  speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      speedBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      speedMultiplier = parseFloat(btn.dataset.speed);
+      if (mockLoopTimeout) clearTimeout(mockLoopTimeout);
+      if (!isPaused) scheduleNextMockComment();
+    });
+  });
 
   // 保存されていたニックネームを復元
   const savedName = localStorage.getItem('yt_sim_nickname');
-  if (savedName) {
-    nicknameInput.value = savedName;
-  }
+  if (savedName) nicknameInput.value = savedName;
 
   // カラーパレット生成
   USER_COLORS.forEach(color => {
@@ -540,13 +777,10 @@
     colorDotsContainer.appendChild(dot);
   });
 
-  // 現在のニックネーム取得ヘルパー
   function getCurrentUserName() {
-    const raw = nicknameInput.value.trim();
-    return raw || '名無しの視聴者';
+    return nicknameInput.value.trim() || '名無しの視聴者';
   }
 
-  // プロフィール表示の更新
   function updateProfilePreview() {
     const name = getCurrentUserName();
     localStorage.setItem('yt_sim_nickname', name);
@@ -567,7 +801,7 @@
   themeToggleBtn.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     const isDark = document.body.classList.contains('dark-mode');
-    themeToggleBtn.innerText = isDark ? '☀️ 白背景にする' : '🌙 ダーク背景にする';
+    themeToggleBtn.innerText = isDark ? '☀️ 明' : '🌙 暗';
   });
 
   // 自動スクロール判定
@@ -675,8 +909,7 @@
   function handleSendMessage() {
     const text = messageInput.value.trim();
     if (!text) return;
-    const myName = getCurrentUserName();
-    appendNormalMessage(myName, text, userAvatarColor, true);
+    appendNormalMessage(getCurrentUserName(), text, userAvatarColor, true);
     messageInput.value = '';
   }
 
@@ -685,7 +918,7 @@
     if (e.key === 'Enter') handleSendMessage();
   });
 
-  // モーダル操作 & スライダー連動
+  // モーダル操作
   openSuperChatBtn.addEventListener('click', () => {
     updateProfilePreview();
     superChatModal.style.display = 'flex';
@@ -730,30 +963,42 @@
   submitSuperChatBtn.addEventListener('click', () => {
     const currentTier = TIERS[parseInt(amountSlider.value)];
     const message = scCommentInput.value.trim();
-    const myName = getCurrentUserName();
-
-    appendSuperChat(myName, currentTier.amount, message, currentTier, userAvatarColor, true);
-
+    appendSuperChat(getCurrentUserName(), currentTier.amount, message, currentTier, userAvatarColor, true);
     scCommentInput.value = '';
     superChatModal.style.display = 'none';
   });
 
-  // 自動モックコメント生成ループ
+  // =========================================================================
+  // ★ 3. シナリオ連動・自動モックコメント生成ループ
+  // =========================================================================
   function scheduleNextMockComment() {
-    const delay = Math.random() * 1400 + 900;
-    setTimeout(() => {
-      if (Math.random() < 0.08) {
-        const randomUser = MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)];
+    if (isPaused) return;
+
+    const phase = getCurrentPhase();
+    // 現在のフェーズの間隔設定を速度倍率（speedMultiplier）で割る
+    const rawDelay = Math.random() * (phase.maxDelay - phase.minDelay) + phase.minDelay;
+    const finalDelay = Math.max(50, rawDelay / speedMultiplier);
+
+    mockLoopTimeout = setTimeout(() => {
+      if (isPaused) return;
+
+      const currentPhase = getCurrentPhase();
+      const randomUser = MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)];
+
+      // フェーズごとのスパチャ確率に応じた分岐
+      if (Math.random() < currentPhase.superchatRate) {
         const randomTier = TIERS[Math.floor(Math.random() * TIERS.length)];
-        const scMsg = randomTier.tier > 1 ? '神配信ありがとうございます！！応援してます！' : '';
+        const scList = currentPhase.scMessages;
+        const scMsg = randomTier.tier > 1 ? scList[Math.floor(Math.random() * scList.length)] : '';
         appendSuperChat(randomUser.name, randomTier.amount, scMsg, randomTier, randomUser.color, false);
       } else {
-        const randomUser = MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)];
-        const randomMsg = MOCK_MESSAGES[Math.floor(Math.random() * MOCK_MESSAGES.length)];
+        const msgList = currentPhase.messages;
+        const randomMsg = msgList[Math.floor(Math.random() * msgList.length)];
         appendNormalMessage(randomUser.name, randomMsg, randomUser.color, false);
       }
+
       scheduleNextMockComment();
-    }, delay);
+    }, finalDelay);
   }
 
   function escapeHtml(str) {
@@ -763,6 +1008,7 @@
   }
 
   // 初期実行
+  updateTimerDisplay();
   scheduleNextMockComment();
 </script>
 </body>
