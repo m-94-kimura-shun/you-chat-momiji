@@ -685,4 +685,415 @@
   // =========================================================================
   // ★ 2. モック視聴者リスト（50人分）
   // =========================================================================
-  const M
+  const MOCK_USERS = [
+    { name: '都の民A', color: '#E91E63' }, { name: '匿名リスナー', color: '#455A64' },
+    { name: 'みやこっこ', color: '#9C27B0' }, { name: '討伐隊推し', color: '#3F51B5' },
+    { name: '見物人_01', color: '#009688' }, { name: '野次馬', color: '#FF9800' },
+    { name: '夜更かし', color: '#795548' }, { name: '都ワイド視聴者', color: '#D32F2F' },
+    { name: '通りすがり', color: '#1976D2' }, { name: 'うわさ好き', color: '#388E3C' },
+    { name: '信濃ウォッチャー', color: '#FBC02D' }, { name: '地謡アカウント', color: '#512DA8' },
+    { name: '京の暇人', color: '#C2185B' }, { name: '維茂ファンクラブ', color: '#0288D1' },
+    { name: '平家推し', color: '#00796B' }, { name: 'ゴシップハンター', color: '#F57C00' },
+    { name: '正義の使者', color: '#303F9F' }, { name: '鬼退治見守り隊', color: '#D32F2F' },
+    { name: '昼下がりの劇薬', color: '#7B1FA2' }, { name: '白菊の記憶', color: '#689F38' },
+    { name: '第六天の住人', color: '#212121' }, { name: '募金箱の釣り銭', color: '#FFB300' },
+    { name: '近江の旅人', color: '#0097A7' }, { name: '美濃の鮎釣り', color: '#5D4037' },
+    { name: '公家日記', color: '#8E24AA' }, { name: '北信の風', color: '#1E88E5' },
+    { name: '真実追求者', color: '#43A047' }, { name: '炎上ウォッチャー', color: '#E53935' },
+    { name: '切り抜き職人', color: '#FB8C00' }, { name: 'ソレガシ信者', color: '#5E35B1' },
+    { name: 'ナニガシの蝶ネクタイ', color: '#FDD835' }, { name: '神剣マニア', color: '#039BE5' },
+    { name: '深夜の羅生門', color: '#37474F' }, { name: '言霊コレクター', color: '#00897B' },
+    { name: '千年目の視聴者', color: '#6D4C41' }, { name: 'たなか', color: '#D81B60' },
+    { name: 'Sato_K', color: '#8E24AA' }, { name: 'ネコ丸', color: '#3949AB' },
+    { name: 'StreamFan', color: '#00ACC1' }, { name: 'アリス', color: '#FB8C00' },
+    { name: '夜更かしフクロウ', color: '#546E7A' }, { name: 'けんた', color: '#1565C0' },
+    { name: 'Haru_09', color: '#2E7D32' }, { name: 'おもち', color: '#F9A825' },
+    { name: '勧善懲悪マン', color: '#C62828' }, { name: '都の警備兵', color: '#283593' },
+    { name: '扇パタパタ', color: '#AD1457' }, { name: '囃子立て太郎', color: '#00695C' },
+    { name: '次の鬼探し中', color: '#4E342E' }, { name: '名無しの都人', color: '#616161' }
+  ];
+
+  // Super Chat ティア設定
+  const TIERS = [
+    { tier: 1, amount: 100,   headerColor: '#1565C0', bodyColor: '#1E88E5', textColor: '#ffffff', maxChars: 0,   duration: 0 },
+    { tier: 2, amount: 200,   headerColor: '#00B8D4', bodyColor: '#00E5FF', textColor: '#000000', maxChars: 50,  duration: 0 },
+    { tier: 3, amount: 500,   headerColor: '#00BFA5', bodyColor: '#1DE9B6', textColor: '#000000', maxChars: 150, duration: 20 },
+    { tier: 4, amount: 1000,  headerColor: '#FFB300', bodyColor: '#FFCA28', textColor: '#000000', maxChars: 200, duration: 35 },
+    { tier: 5, amount: 2000,  headerColor: '#E65100', bodyColor: '#F57C00', textColor: '#ffffff', maxChars: 225, duration: 50 },
+    { tier: 6, amount: 5000,  headerColor: '#C2185B', bodyColor: '#E91E63', textColor: '#ffffff', maxChars: 250, duration: 70 },
+    { tier: 7, amount: 10000, headerColor: '#D00000', bodyColor: '#E62117', textColor: '#ffffff', maxChars: 270, duration: 100 }
+  ];
+
+  const USER_COLORS = ['#065fd4', '#E91E63', '#009688', '#FF9800', '#9C27B0', '#43A047'];
+
+  // DOM要素取得
+  const chatMessages = document.getElementById('chatMessages');
+  const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const tickerArea = document.getElementById('tickerArea');
+  const tickerEmptyText = document.getElementById('tickerEmptyText');
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+  // 演出コントロール関連
+  const directorToggleBtn = document.getElementById('directorToggleBtn');
+  const directorPanel = document.getElementById('directorPanel');
+  const elapsedTimer = document.getElementById('elapsedTimer');
+  const currentPhaseLabel = document.getElementById('currentPhaseLabel');
+  const pauseResumeBtn = document.getElementById('pauseResumeBtn');
+  const resetTimerBtn = document.getElementById('resetTimerBtn');
+  const phaseSelect = document.getElementById('phaseSelect');
+  const speedBtns = document.querySelectorAll('[data-speed]');
+
+  // プロフィール関連
+  const nicknameInput = document.getElementById('nicknameInput');
+  const currentUserAvatarPreview = document.getElementById('currentUserAvatarPreview');
+  const colorDotsContainer = document.getElementById('colorDotsContainer');
+
+  // モーダル要素
+  const openSuperChatBtn = document.getElementById('openSuperChatBtn');
+  const superChatModal = document.getElementById('superChatModal');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const amountSlider = document.getElementById('amountSlider');
+  const scPreviewHeader = document.getElementById('scPreviewHeader');
+  const scPreviewAvatar = document.getElementById('scPreviewAvatar');
+  const scPreviewUserName = document.getElementById('scPreviewUserName');
+  const scPreviewAmount = document.getElementById('scPreviewAmount');
+  const scPreviewBody = document.getElementById('scPreviewBody');
+  const scCommentInput = document.getElementById('scCommentInput');
+  const scCharCount = document.getElementById('scCharCount');
+  const submitSuperChatBtn = document.getElementById('submitSuperChatBtn');
+
+  // 状態管理変数
+  let isAutoScroll = true;
+  let elapsedSeconds = 0;
+  let isPaused = false;
+  let manualPhaseIndex = 'auto';
+  let speedMultiplier = 1.0;
+  let mockLoopTimeout = null;
+  let userAvatarColor = localStorage.getItem('yt_sim_color') || USER_COLORS[0];
+
+  SCENARIO_PHASES.forEach((phase, index) => {
+    const opt = document.createElement('option');
+    opt.value = index;
+    opt.innerText = `手動固定: ${phase.name}`;
+    phaseSelect.appendChild(opt);
+  });
+
+  setInterval(() => {
+    if (!isPaused) {
+      elapsedSeconds++;
+      updateTimerDisplay();
+    }
+  }, 1000);
+
+  function updateTimerDisplay() {
+    const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+    const secs = String(elapsedSeconds % 60).padStart(2, '0');
+    elapsedTimer.innerText = `${mins}:${secs}`;
+    const activePhase = getCurrentPhase();
+    currentPhaseLabel.innerText = activePhase.name;
+  }
+
+  function getCurrentPhase() {
+    if (manualPhaseIndex !== 'auto') {
+      return SCENARIO_PHASES[parseInt(manualPhaseIndex)];
+    }
+    let current = SCENARIO_PHASES[0];
+    for (const phase of SCENARIO_PHASES) {
+      if (elapsedSeconds >= phase.startTime) {
+        current = phase;
+      }
+    }
+    return current;
+  }
+
+  directorToggleBtn.addEventListener('click', () => {
+    directorPanel.classList.toggle('open');
+  });
+
+  pauseResumeBtn.addEventListener('click', () => {
+    isPaused = !isPaused;
+    pauseResumeBtn.innerText = isPaused ? '▶️ 再開' : '⏸ 一時停止';
+    pauseResumeBtn.classList.toggle('active', isPaused);
+    if (!isPaused) {
+      scheduleNextMockComment();
+    } else if (mockLoopTimeout) {
+      clearTimeout(mockLoopTimeout);
+    }
+  });
+
+  resetTimerBtn.addEventListener('click', () => {
+    elapsedSeconds = 0;
+    updateTimerDisplay();
+  });
+
+  phaseSelect.addEventListener('change', (e) => {
+    manualPhaseIndex = e.target.value;
+    updateTimerDisplay();
+    if (mockLoopTimeout) clearTimeout(mockLoopTimeout);
+    if (!isPaused) scheduleNextMockComment();
+  });
+
+  speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      speedBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      speedMultiplier = parseFloat(btn.dataset.speed);
+      if (mockLoopTimeout) clearTimeout(mockLoopTimeout);
+      if (!isPaused) scheduleNextMockComment();
+    });
+  });
+
+  const savedName = localStorage.getItem('yt_sim_nickname');
+  if (savedName) nicknameInput.value = savedName;
+
+  USER_COLORS.forEach(color => {
+    const dot = document.createElement('div');
+    dot.className = 'color-dot' + (color === userAvatarColor ? ' active' : '');
+    dot.style.backgroundColor = color;
+    dot.addEventListener('click', () => {
+      userAvatarColor = color;
+      localStorage.setItem('yt_sim_color', color);
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      updateProfilePreview();
+    });
+    colorDotsContainer.appendChild(dot);
+  });
+
+  function getCurrentUserName() {
+    return nicknameInput.value.trim() || '名無しの視聴者';
+  }
+
+  function updateProfilePreview() {
+    const name = getCurrentUserName();
+    localStorage.setItem('yt_sim_nickname', name);
+    const initial = name.slice(0, 1);
+
+    currentUserAvatarPreview.style.backgroundColor = userAvatarColor;
+    currentUserAvatarPreview.innerText = initial;
+
+    scPreviewAvatar.style.backgroundColor = userAvatarColor;
+    scPreviewAvatar.innerText = initial;
+    scPreviewUserName.innerText = name;
+  }
+
+  nicknameInput.addEventListener('input', updateProfilePreview);
+  updateProfilePreview();
+
+  themeToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    themeToggleBtn.innerText = isDark ? '☀️ 明' : '🌙 暗';
+  });
+
+  chatMessages.addEventListener('scroll', () => {
+    const threshold = 40;
+    const isAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight <= threshold;
+    isAutoScroll = isAtBottom;
+    scrollBottomBtn.style.display = isAtBottom ? 'none' : 'block';
+  });
+
+  scrollBottomBtn.addEventListener('click', scrollToBottom);
+
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    isAutoScroll = true;
+    scrollBottomBtn.style.display = 'none';
+  }
+
+  function appendNormalMessage(name, text, color, forceScroll = false) {
+    const item = document.createElement('div');
+    item.className = 'chat-item';
+    item.innerHTML = `
+      <div class="avatar" style="background:${color};">${escapeHtml(name.slice(0, 1))}</div>
+      <div class="content-area">
+        <span class="author-name">${escapeHtml(name)}</span>
+        <span class="message-text">${escapeHtml(text)}</span>
+      </div>
+    `;
+    chatMessages.appendChild(item);
+    trimOldMessages();
+    if (isAutoScroll || forceScroll) scrollToBottom();
+  }
+
+  function appendSuperChat(name, amount, message, tierConfig, avatarColor = '#065fd4', forceScroll = false) {
+    const card = document.createElement('div');
+    card.className = 'superchat-card';
+    card.style.color = tierConfig.textColor;
+
+    let bodyHtml = '';
+    if (tierConfig.tier > 1 && message) {
+      bodyHtml = `
+        <div class="superchat-body" style="background:${tierConfig.bodyColor}; color:${tierConfig.textColor};">
+          ${escapeHtml(message)}
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="superchat-header" style="background:${tierConfig.headerColor}; color:${tierConfig.textColor};">
+        <div class="superchat-user">
+          <div class="avatar" style="background:${avatarColor}; color:#fff;">${escapeHtml(name.slice(0, 1))}</div>
+          <span>${escapeHtml(name)}</span>
+        </div>
+        <div class="superchat-amount">¥${amount.toLocaleString()}</div>
+      </div>
+      ${bodyHtml}
+    `;
+
+    chatMessages.appendChild(card);
+    trimOldMessages();
+    if (isAutoScroll || forceScroll) scrollToBottom();
+
+    if (tierConfig.duration > 0) {
+      addTicker(name, amount, message, tierConfig);
+    }
+  }
+
+  function trimOldMessages() {
+    while (chatMessages.children.length > 150) {
+      chatMessages.removeChild(chatMessages.firstChild);
+    }
+  }
+
+  function addTicker(name, amount, message, tierConfig) {
+    if (tickerEmptyText) tickerEmptyText.style.display = 'none';
+
+    const item = document.createElement('div');
+    item.className = 'ticker-item';
+    item.style.backgroundColor = tierConfig.headerColor;
+    item.style.color = tierConfig.textColor;
+    item.title = message ? `${name}: ${message}` : name;
+    item.innerHTML = `
+      <span>${escapeHtml(name)}</span>
+      <span>¥${amount.toLocaleString()}</span>
+    `;
+
+    item.addEventListener('click', () => {
+      alert(`【Super Chat】\n投稿者: ${name}\n金額: ¥${amount.toLocaleString()}\nコメント: ${message || '(メッセージなし)'}`);
+    });
+
+    tickerArea.appendChild(item);
+
+    const currentTickers = tickerArea.querySelectorAll('.ticker-item');
+    if (currentTickers.length > 30) {
+      currentTickers[0].remove();
+    }
+
+    tickerArea.scrollLeft = tickerArea.scrollWidth;
+
+    setTimeout(() => {
+      if (item.parentNode) item.remove();
+      if (tickerArea.querySelectorAll('.ticker-item').length === 0 && tickerEmptyText) {
+        tickerEmptyText.style.display = 'inline';
+      }
+    }, tierConfig.duration * 1000);
+  }
+
+  function handleSendMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+    appendNormalMessage(getCurrentUserName(), text, userAvatarColor, true);
+    messageInput.value = '';
+  }
+
+  sendBtn.addEventListener('click', handleSendMessage);
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleSendMessage();
+  });
+
+  openSuperChatBtn.addEventListener('click', () => {
+    updateProfilePreview();
+    superChatModal.style.display = 'flex';
+    updateModalPreview();
+    scCommentInput.focus();
+  });
+
+  closeModalBtn.addEventListener('click', () => {
+    superChatModal.style.display = 'none';
+  });
+
+  amountSlider.addEventListener('input', updateModalPreview);
+  scCommentInput.addEventListener('input', updateModalPreview);
+
+  function updateModalPreview() {
+    const currentTier = TIERS[parseInt(amountSlider.value)];
+    scPreviewHeader.style.backgroundColor = currentTier.headerColor;
+    scPreviewHeader.style.color = currentTier.textColor;
+    scPreviewBody.style.backgroundColor = currentTier.bodyColor;
+    scPreviewBody.style.color = currentTier.textColor;
+    scPreviewAmount.innerText = `¥${currentTier.amount.toLocaleString()}`;
+
+    if (currentTier.tier === 1) {
+      scCommentInput.disabled = true;
+      scCommentInput.placeholder = '¥100ではメッセージを送信できません';
+      scCommentInput.value = '';
+      scPreviewBody.style.display = 'none';
+      scCharCount.innerText = '0 / 0';
+    } else {
+      scCommentInput.disabled = false;
+      scCommentInput.placeholder = 'メッセージを入力...';
+      scCommentInput.maxLength = currentTier.maxChars;
+      scPreviewBody.style.display = 'block';
+
+      const text = scCommentInput.value.trim();
+      scPreviewBody.innerText = text || '(メッセージを入力してください)';
+      scCharCount.innerText = `${scCommentInput.value.length} / ${currentTier.maxChars}`;
+    }
+  }
+
+  submitSuperChatBtn.addEventListener('click', () => {
+    const currentTier = TIERS[parseInt(amountSlider.value)];
+    const message = scCommentInput.value.trim();
+    appendSuperChat(getCurrentUserName(), currentTier.amount, message, currentTier, userAvatarColor, true);
+    scCommentInput.value = '';
+    superChatModal.style.display = 'none';
+  });
+
+  function scheduleNextMockComment() {
+    if (isPaused) return;
+
+    const phase = getCurrentPhase();
+    const rawDelay = Math.random() * (phase.maxDelay - phase.minDelay) + phase.minDelay;
+    const finalDelay = Math.max(20, rawDelay / speedMultiplier);
+
+    mockLoopTimeout = setTimeout(() => {
+      if (isPaused) return;
+
+      const currentPhase = getCurrentPhase();
+      const randomUser = MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)];
+
+      if (Math.random() < currentPhase.superchatRate) {
+        let randomTier;
+        if (currentPhase.startTime >= 180 && Math.random() < 0.70) {
+          const highTiers = TIERS.slice(3);
+          randomTier = highTiers[Math.floor(Math.random() * highTiers.length)];
+        } else {
+          randomTier = TIERS[Math.floor(Math.random() * TIERS.length)];
+        }
+        const scList = currentPhase.scMessages;
+        const scMsg = randomTier.tier > 1 ? scList[Math.floor(Math.random() * scList.length)] : '';
+        appendSuperChat(randomUser.name, randomTier.amount, scMsg, randomTier, randomUser.color, false);
+      } else {
+        const msgList = currentPhase.messages;
+        const randomMsg = msgList[Math.floor(Math.random() * msgList.length)];
+        appendNormalMessage(randomUser.name, randomMsg, randomUser.color, false);
+      }
+
+      scheduleNextMockComment();
+    }, finalDelay);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>'"]/g, tag => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag] || tag));
+  }
+
+  updateTimerDisplay();
+  scheduleNextMockComment();
+</script>
+</body>
+</html>
